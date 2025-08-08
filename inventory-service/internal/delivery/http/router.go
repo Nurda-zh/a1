@@ -1,4 +1,4 @@
-package handler
+package http
 
 import (
 	"github.com/Nurda-zh/a1/inventory-service/internal/delivery/http/handler"
