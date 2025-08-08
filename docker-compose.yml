@@ -1,0 +1,41 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+    container_name: inventory-service
+    ports:
+      - "8001:8080" # 8080 — это твой ServerPort внутри Go, 8001 — снаружи
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=inventory_db
+      - SERVER_PORT=8080
+    depends_on:
+      - mongo
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    ports:
+      - "8002:8002" # порт совпадает с LISTEN_PORT
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=orders
+      - LISTEN_PORT=8002
+      - INVENTORY_URL=http://inventory-service:8080/api
+    depends_on:
+      - mongo
+      - inventory-service
+
+volumes:
+  mongo_data:

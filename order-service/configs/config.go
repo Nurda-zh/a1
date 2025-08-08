@@ -1,35 +1,31 @@
 package config
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 type Config struct {
 	MongoURI            string
-	MongoDBName         string
-	ListenPort          string
+	Database            string
+	ServerPort          string
 	InventoryServiceURL string
 }
 
-func Load() *Config {
-	uri := os.Getenv("MONGO_URI")
-	if uri == "" {
-		uri = "mongodb://mongo:27017"
+func LoadConfig() *Config {
+	cfg := &Config{
+		MongoURI:            getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		Database:            getEnv("MONGO_DB", "orders_db"),
+		ServerPort:          getEnv("SERVER_PORT", "8002"),
+		InventoryServiceURL: getEnv("INVENTORY_URL", "http://localhost:8001/api"),
 	}
-	dbName := os.Getenv("MONGO_DB")
-	if dbName == "" {
-		dbName = "orders"
+	log.Println("Configuration loaded.")
+	return cfg
+}
+
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
-	port := os.Getenv("LISTEN_PORT")
-	if port == "" {
-		port = "8002"
-	}
-	inv := os.Getenv("INVENTORY_URL")
-	if inv == "" {
-		inv = "http://inventory:8001/api"
-	}
-	return &Config{
-		MongoURI:            uri,
-		MongoDBName:         dbName,
-		ListenPort:          port,
-		InventoryServiceURL: inv,
-	}
+	return fallback
 }

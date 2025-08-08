@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"time"
 
 	config "github.com/Nurda-zh/a1/order-service/configs"
@@ -15,7 +14,7 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg := config.LoadConfig()
 
 	client, err := infra.NewMongoClient(cfg.MongoURI)
 	if err != nil {
@@ -27,26 +26,18 @@ func main() {
 		_ = client.Disconnect(ctx)
 	}()
 
-	db := client.Database(cfg.MongoDBName)
+	db := client.Database(cfg.Database)
 
 	orderRepo := repository.NewMongoOrderRepo(db)
 	orderUC := usecase.NewOrderUsecase(orderRepo, cfg.InventoryServiceURL)
 	orderHandler := handler.NewOrderHandler(orderUC)
 
-	r := gin.New()
-	r.Use(gin.Logger(), gin.Recovery())
-
+	r := gin.Default()
 	api := r.Group("/api")
 	orderHandler.RegisterRoutes(api)
 
-	addr := ":" + cfg.ListenPort
-	srv := &http.Server{
-		Addr:    addr,
-		Handler: r,
-	}
-
-	log.Printf("Order service running on %s", addr)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	log.Printf("Order service running on port %s", cfg.ServerPort)
+	if err := r.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
 }
